@@ -1,0 +1,29 @@
+{% extends 'blog/base.html' %}
+{% block content %}
+    <h1>This is our new index page!</h1>
+    {% for p in posts %}
+    <h3>{{ p.title }}</h3>
+    <h5>By {{ p.author }} on {{ p.date_posted }}</h5>
+    <h5>{{ p.content }}</h5>
+    {% endfor %}
+{% endblock content %}
+
+
+{% block content %}
+    <h1>This is our new index page!</h1>
+    {% for p in posts %}
+
+        {% if p.author == "Ivan Wang" %}
+            <h2>The Best Instructor</h2>
+        {% endif %}
+
+        <h3>{{ p.title }}</h3>
+        <h5>By {{ p.author }} on {{ p.date_posted }}</h5>
+        <h5>{{ p.content }}</h5>
+    {% endfor %}
+{% endblock content %}
+
+
+<h3>{{ p.title}} </h3>
+<h5> By {{ p.author }} on {{ p.date_posted }}</h5>
+<h5> {{ p.content }}</h5>
