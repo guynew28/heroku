@@ -9,6 +9,12 @@ from .forms import PostForm, UserForm
 #import extra funcationality: (authentication/login/logout/messages)
 from django.contrib.auth import authenticate, login, logout 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+# import mail dependencies
+from django.core.mail import EmailMessage
+from django.conf import settings
+from django.template.loader import render_to_string
 
 # Create your views here.
 def index(request):
@@ -36,13 +42,14 @@ def aboutPage(request):
 
 def posts(request):
     posts = Post.objects.all()
-    print(posts)
+    
     context = {
         'posts': posts,
         'page_title': 'WELCOME TO MY BLOG'
     }
     return render(request, 'blog/posts.html', context)
 
+@login_required(login_url='blog-login')
 def createPost(request):
     form = PostForm(request.POST or None)
     if form.is_valid():
@@ -52,32 +59,85 @@ def createPost(request):
     }
     return render(request, 'blog/createpost.html', context)
 
-def aboutContact(request):
-    return render(request, 'blog/contact.html')
-
 def registerPage(request):
     form = UserForm(request.POST or None)
+    u=request.POST.get("username")
+    e=request.POST.get("email")
+    p1=request.POST.get("password1")
+    p2=request.POST.get("password2")
+    print(u, e, p1, p2)
     if form.is_valid():
         form.save()
+
+        user = form.cleaned_data.get("username")
+        email = form.cleaned_data.get("email")
+
+        context = {"username": user}
+
+        messages.success(request, "Account was created for" + user)
+
+        return redirect('blog-login')
+    template = render_to_string('blog/emailtemplate.html', context)
+
+        email_message = EmailMessage(
+            'Welcome to my Django Blog!', #subject line
+            template, #body
+            settings.EMAIL_HOST_USER,
+            [email],
+        )
+
+        email_message.fail_silently = False
+        email_message.send()
+
     context = {'form': form}
     return render(request, 'blog/register.html', context)
-
 
 def loginPage(request):
     if request.method =="POST":
         username = request.POST.get("username") # come from name attribuet in html input tage
         password = request.POST.get("password1")
 
-        print(username, password)
-
         user = authenticate(request, username = username, password = password)
         
         if user is not None:
-            login(request,user)
+            login(request, user)
             print(f'{user} is logged in!')
             return redirect('blog-index')
+        messages.info(request, "Incorrect username OR password")
     return render(request, 'blog/login.html')
 
+@login_required(login_url='blog-login')
 def logoutUser(request):
     logout(request)
     return redirect('blog-login')
+
+def individualPost(request, post_id):
+    post = Post.objects.get(id=post_id)
+    context = {'p':post}
+    return render(request, 'blog/individualpost.html', context)
+
+@login_required(login_url='blog-login')
+def updatePost(request, post_id):
+    post = Post.objects.get(id=post_id)
+    form = PostForm(instance=post)
+    if request.method == "POST":
+        form = PostForm(request.POST, instance=post)
+        if post.author.id != request.user.id:
+            messages.info(request, "You can't update another user's post!")
+            return redirect('blog-posts')
+        if form.is_valid():
+            form.save()
+            messages.success(request, "You have successfully updated your post")
+        return redirect('blog-individualpost', post_id=post_id)
+    context = {'form': form}
+    return render(request, 'blog/updatepost.html', context)
+
+@login_required(login_url='blog-login')
+def deletePost(request, post_id):
+    post= Post.objects.get(id=post_id)
+    if post.author.id != request.user.id:
+        messages.info(request, "You can't delete another user's post!")
+        return redirect('blog-posts')
+    post.delete()
+    messages.success(request, "The post was successfully deleted")
+    return redirect('blog-posts')

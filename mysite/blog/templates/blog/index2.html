@@ -27,3 +27,40 @@
 <h3>{{ p.title}} </h3>
 <h5> By {{ p.author }} on {{ p.date_posted }}</h5>
 <h5> {{ p.content }}</h5>
+
+
+
+
+{% if post.author.id != request.user.id %}
+messages.info(request, "You can't update another user's post!")
+return redirect('blog-posts')
+{% endif %}
+
+
+
+<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    Delete
+    </button>
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <div class="modal-body"> This action cannot be reversed.  Are you sure you wantto delete?
+                    
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <form action="{% url 'blog-deletepost' post_id=p.id %}" method="POST"> 
+                {% csrf_token %}
+        <input type="submit" class="btn btn-danger" value="Delete">
+            </form>
+        </div>
+        </div>
+    </div>
+  
+    </div>
